@@ -1,0 +1,26 @@
+# Etapa 1: Define a imagem base a partir da qual construiremos
+# Usamos a versão 18 do Node.js em uma base Alpine Linux, que é leve e segura.
+FROM node:18-alpine
+
+# Etapa 2: Define o diretório de trabalho dentro do container
+# Todos os comandos a seguir serão executados a partir deste diretório.
+WORKDIR /usr/src/app
+
+# Etapa 3: Copia os arquivos de gerenciamento de pacotes
+# O '*' garante que tanto o package.json quanto o package-lock.json sejam copiados.
+COPY package*.json ./
+
+# Etapa 4: Instala as dependências do projeto
+# Isso é feito aqui para aproveitar o cache do Docker. Explicarei abaixo.
+RUN npm install
+
+# Etapa 5: Copia o restante do código da sua aplicação para o diretório de trabalho
+COPY . .
+
+# Etapa 6: Informa ao Docker que o container vai expor a porta 3000
+# Isso não publica a porta, apenas documenta. A publicação é feita no docker-compose.
+EXPOSE 3000
+
+# Etapa 7: Define o comando padrão para iniciar a aplicação quando o container subir
+# Usamos o script "dev" que você configurou no package.json para usar o nodemon.
+CMD [ "npm", "run", "dev" ]

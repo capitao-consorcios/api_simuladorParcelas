@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  api:
+    # A seção 'build' agora é um objeto para mais detalhes.
+    build:
+      # O contexto da construção é a pasta raiz.
+      context: .
+      # O Dockerfile está localizado dentro da pasta api.
+      dockerfile: ./api/Dockerfile
+
+    container_name: simulador-api
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      # O volume ainda aponta da raiz do projeto para a raiz da app no container.
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+    environment:
+      - NODE_ENV=development
