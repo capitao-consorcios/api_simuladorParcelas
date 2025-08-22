@@ -1,23 +1,24 @@
+// main.js
+
 const express = require('express');
 const simuladorRoutes = require('./api/routes/simulador_routes.js');
+const authenticateToken = require('./api/middleware/auth.js');
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Porta do ambiente 3000 como padrão.
+const PORT = process.env.PORT || 3000;
 
-// ler json que vem das requisições. Middlewares
 app.use(express.json());
 
-// Rotas para acessar começando com o /api.
+
+app.use(authenticateToken);
+
+// 3. SUAS ROTAS CONTINUAM AQUI
 app.use('/api', simuladorRoutes);
 
-
-// Rota simples para sair a raiz da API, para testar o servidor.
 app.get('/', (req, res) => {
-    res.send('API do Simulador de Consórcio do ar!');
+    res.send('API do Simulador de Consórcio no ar!');
 });
 
-
-// inicialização do Servidor1
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta http://localhost:${PORT}`);
-})
+});
