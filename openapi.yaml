@@ -1,0 +1,172 @@
+openapi: 3.0.0
+info:
+  title: API de Simulação de Consórcio
+  description: API para calcular parcelas e simular lances em planos de consórcio de diferentes administradoras.
+  version: "1.0.0"
+  contact:
+    name: "Gustavo / Capitão Consórcios"
+    email: "projetocapitaoti@gmail.com"
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor de Desenvolvimento Local
+
+paths:
+  /api/simular:
+    post:
+      summary: Realiza uma simulação de consórcio.
+      description: Calcula o valor da parcela e pode simular diferentes tipos de lances (livre, fixo, embutido) com base nos parâmetros fornecidos.
+      operationId: realizarSimulacao
+      tags:
+        - Simulador
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulacaoRequest"
+      responses:
+        "200":
+          description: Simulação bem-sucedida.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SimulacaoResponse"
+        "400":
+          description: Erro na requisição devido a parâmetros inválidos.
+
+components:
+  schemas:
+    # Schema da Requisição (Request)
+    SimulacaoRequest:
+      type: object
+      required:
+        - dadosCredito
+        - dadosLanceInput
+      properties:
+        dadosCredito:
+          $ref: "#/components/schemas/DadosCredito"
+        dadosLanceInput:
+          $ref: "#/components/schemas/DadosLanceInput"
+
+    DadosCredito:
+      type: object
+      properties:
+        admin:
+          type: string
+          description: Administradora do consórcio.
+          example: "porto"
+        tipoBem:
+          type: string
+          description: Tipo de bem.
+          enum: [imovel, automovel]
+          example: "imovel"
+        tipoCliente:
+          type: string
+          description: Tipo de cliente.
+          example: "cpf"
+        valorCredito:
+          type: number
+          format: double
+          description: Valor total da carta de crédito.
+          example: 400000
+        numeroParcelas:
+          type: integer
+          description: Prazo total em meses.
+          example: 200
+        taxaAdm:
+          type: number
+          description: Percentual da taxa de administração.
+          example: 17
+        fundoReserva:
+          type: number
+          description: Percentual do fundo de reserva.
+          example: 2
+        seguroVida:
+          type: number
+          description: Percentual do seguro de vida.
+          example: 0.031
+        redutorParcela:
+          type: number
+          description: "Opcional. Para imóvel, o padrão é 25 se omitido."
+          example: 25
+        adesao:
+          type: number
+          description: "Opcional (para imóvel). Percentual da taxa de adesão."
+          example: 2
+        formaPagamentoAdesao:
+          type: string
+          description: "Opcional (para imóvel). Número de parcelas da adesão."
+          example: "12"
+
+    DadosLanceInput:
+      type: object
+      properties:
+        inputLance:
+          type: boolean
+          description: "true para simular lance, false para cálculo simples."
+          example: true
+        tipo:
+          type: string
+          description: Tipo de lance.
+          enum: [livre, fixo, auto_embutido]
+          example: "fixo"
+        formaAbatimento:
+          type: string
+          description: Como o lance abaterá o saldo.
+          enum: [reduzir_prazo_final, reduzir_valor_parcela]
+          example: "reduzir_valor_parcela"
+        usarEmbutido:
+          type: boolean
+          description: "Usar parte do crédito no lance livre ou fixo."
+          example: true
+        porcentagemEmbutido:
+          type: number
+          description: "Usado com tipo 'auto_embutido'."
+          example: 0.25
+        valorLanceLivre:
+          type: number
+          description: "Usado com tipo 'livre'."
+          example: 50000
+        valorEmbutido:
+          type: number
+          description: "Usado com tipo 'livre' e usarEmbutido true."
+          example: 120000
+
+    # Schema da Resposta (Response)
+    SimulacaoResponse:
+      type: object
+      properties:
+        parcelaOriginal:
+          type: number
+        parcelaComRedutor:
+          type: number
+        percentualRedutor:
+          type: number
+        lance:
+          type: object
+          properties:
+            tipo:
+              type: string
+            valorCalculado:
+              type: number
+            percentualOfertado:
+              type: number
+            valorEmbutido:
+              type: number
+            valorDoBolso:
+              type: number
+            formaAbatimento:
+              type: string
+        creditoLiquido:
+          type: number
+        prazoComLance:
+          type: integer
+        parcelaPosContemplacao:
+          type: number
+        adesaoMensal:
+          type: number
+          description: "Aparece apenas para imóveis."
+        mesesRestantesAdesao:
+          type: integer
+          description: "Aparece apenas para imóveis."
