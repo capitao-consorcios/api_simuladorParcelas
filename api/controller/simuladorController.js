@@ -12,6 +12,7 @@ const realizarSimulacao = (req, res) => {
             erro: "Dados de crédito inválidos ou administradora não informada."
         });
     }
+    
 
     switch (dadosCredito.admin) {
         case 'porto':

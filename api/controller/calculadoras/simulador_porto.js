@@ -1,13 +1,10 @@
 // A função original 'realizarCalculoSimulacao', agora chamada 'calcular'
 function calcular(dadosCredito, dadosLanceInput) {
     try {
-        // Constantes específicas de cada administradora
+        // Constantes específicas da Porto
         const PORTO_LANCE_FIXO_PERCENTUAL = 0.4;
         const PORTO_EMBUTIDO_IMOVEL_PERCENTUAL = 0.3;
-        const YAMAHA_LANCE_FIXO_IMOVEL_SALDO_DEVEDOR_PERCENTUAL = 0.3;
-        const YAMAHA_EMBUTIDO_LIVRE_IMOVEL_CREDITO_PERCENTUAL = 0.25;
-        const YAMAHA_EMBUTIDO_LIVRE_AUTO_CREDITO_PERCENTUAL = 0.15;
-        const ITAU_EMBUTIDO_MAX_PERCENTUAL = 0.3;
+        // As constantes de outras administradoras foram removidas para manter o arquivo limpo.
 
         // Desestruturação dos dados de entrada do crédito
         const {
@@ -26,13 +23,25 @@ function calcular(dadosCredito, dadosLanceInput) {
             portoAutomovelPercentualEmbutido: portoAutoPercEmbutidoInput = 0,
         } = dadosCredito;
 
-        // Conversão e validação dos dados de entrada
         const valorCreditoOriginal = parseFloat(valorCreditoStr) || 0;
         const prazoTotalConsorcio = parseInt(numeroParcelasStr, 10) || 0;
         const taxaAdmTotalPercent = parseFloat(taxaAdmStr) || 0;
         const fundoReservaTotalPercent = parseFloat(fundoReservaStr) || 0;
         const seguroVidaMensalInformadoPercent = parseFloat(seguroVidaStr) || 0;
-        const percentualRedutorAplicado = parseFloat(redutorParcelaStr) || 0;
+        let percentualRedutorAplicado;
+
+        // Verifica se a chave 'redutorParcela' foi enviada na requisição
+        if (dadosCredito.redutorParcela !== undefined) {
+            // Se foi enviada, usa o valor dela (convertido para número), mesmo que seja 0.
+            percentualRedutorAplicado = parseFloat(dadosCredito.redutorParcela) || 0;
+        } else {
+            if (tipoBem === 'imovel') {
+                percentualRedutorAplicado = 25; // Padrão para imóvel quando nada é informado
+            } else {
+                percentualRedutorAplicado = 0; // Padrão para outros tipos de bem
+            }
+        }
+
         const percentualAdesaoInput = parseFloat(adesaoStr) || 0;
         const mesesPagosAntesLance = parseInt(mesesPagosAntesLanceStr, 10) || 0;
 
@@ -52,9 +61,8 @@ function calcular(dadosCredito, dadosLanceInput) {
 
         let seguroVidaMensalFixo = 0.0;
         if (tipoCliente === "cpf" && seguroVidaMensalInformadoPercent > 0) {
-            const baseCalculoSeguro = ["porto", "yamaha"].includes(admin)
-                ? saldoDevedorOriginal
-                : valorCreditoOriginal;
+            // Para Porto, a base de cálculo do seguro é o saldo devedor original
+            const baseCalculoSeguro = saldoDevedorOriginal;
             seguroVidaMensalFixo =
                 baseCalculoSeguro * (seguroVidaMensalInformadoPercent / 100.0);
         }
@@ -105,45 +113,78 @@ function calcular(dadosCredito, dadosLanceInput) {
         const tipoLanceSelecionado = dadosLanceInput.tipo;
 
         // Lógica de cálculo do lance
-        if (tipoLanceSelecionado !== "nenhum") {
+        if (tipoLanceSelecionado && tipoLanceSelecionado !== "nenhum") {
             let parteEmbutidaReais = 0;
             let partePropriaReais = 0;
-            const baseCalculoLance =
-                admin === "itau" ? valorCreditoOriginal : saldoDevedorVigente;
+            const baseCalculoLance = saldoDevedorVigente; // Porto sempre usa saldo devedor
 
             if (admin === "porto") {
-                if (dadosLanceInput.usarEmbutido) {
-                    const maxEmbutidoPerc =
-                        tipoBem === "imovel"
-                            ? PORTO_EMBUTIDO_IMOVEL_PERCENTUAL
-                            : parseFloat(portoAutoPercEmbutidoInput) || 0;
-                    const maxEmbutidoReais = valorCreditoOriginal * maxEmbutidoPerc;
-                    const valorEmbutidoDigitado =
-                        parseFloat(dadosLanceInput.valorEmbutido) || 0;
-                    parteEmbutidaReais = Math.min(
-                        valorEmbutidoDigitado,
-                        maxEmbutidoReais
-                    );
-                }
+                switch (tipoLanceSelecionado) {
+                    case "livre":
+                        if (dadosLanceInput.usarEmbutido) {
+                            const maxEmbutidoPerc =
+                                tipoBem === "imovel"
+                                    ? PORTO_EMBUTIDO_IMOVEL_PERCENTUAL
+                                    : parseFloat(portoAutoPercEmbutidoInput) || 0;
+                            const maxEmbutidoReais = valorCreditoOriginal * maxEmbutidoPerc;
+                            const valorEmbutidoDigitado =
+                                parseFloat(dadosLanceInput.valorEmbutido) || 0;
+                            parteEmbutidaReais = Math.min(
+                                valorEmbutidoDigitado,
+                                maxEmbutidoReais
+                            );
+                        }
+                        const valorLanceLivreReais =
+                            parseFloat(dadosLanceInput.valorLanceLivre) || 0;
+                        const percLanceLivre =
+                            parseFloat(dadosLanceInput.percentualLanceLivre) || 0;
+                        if (valorLanceLivreReais > 0) {
+                            partePropriaReais = valorLanceLivreReais;
+                        } else if (percLanceLivre > 0) {
+                            partePropriaReais = baseCalculoLance * (percLanceLivre / 100.0);
+                        }
+                        break;
 
-                if (tipoLanceSelecionado === "livre") {
-                    const valorLanceLivreReais =
-                        parseFloat(dadosLanceInput.valorLanceLivre) || 0;
-                    const percLanceLivre =
-                        parseFloat(dadosLanceInput.percentualLanceLivre) || 0;
-                    if (valorLanceLivreReais > 0) {
-                        partePropriaReais = valorLanceLivreReais;
-                    } else if (percLanceLivre > 0) {
-                        partePropriaReais = baseCalculoLance * (percLanceLivre / 100.0);
-                    }
-                } else if (tipoLanceSelecionado.includes("fixo_porto")) {
-                    const valorTotalFixo = baseCalculoLance * PORTO_LANCE_FIXO_PERCENTUAL;
-                    partePropriaReais = valorTotalFixo - parteEmbutidaReais;
+                    case "auto_embutido":
+                        const percentualEmbutidoEscolhido = parseFloat(dadosLanceInput.porcentagemEmbutido) || 0;
+                        const percentuaisValidos = [0.15, 0.20, 0.25, 0.30];
+
+                        if (!percentuaisValidos.includes(percentualEmbutidoEscolhido)) {
+                            console.warn("Percentual de lance embutido inválido para 'auto_embutido'.");
+                            parteEmbutidaReais = 0;
+                            partePropriaReais = 0;
+                        } else {
+                            parteEmbutidaReais = valorCreditoOriginal * percentualEmbutidoEscolhido;
+                            partePropriaReais = 0;
+                        }
+                        break;
+
+                    case "fixo":
+                        // 1. O valor total do lance é sempre 40% da base de cálculo.
+                        const valorTotalFixo = baseCalculoLance * 0.40;
+
+                        // 2. Verifica se o cliente quer usar o lance embutido opcional.
+                        if (dadosLanceInput.usarEmbutido) {
+                            // O máximo embutido permitido é 30% do valor do crédito.
+                            const maxEmbutidoReais = valorCreditoOriginal * 0.30;
+
+                            // A parte embutida será o máximo permitido, mas não pode ultrapassar o valor total do lance fixo.
+                            parteEmbutidaReais = Math.min(valorTotalFixo, maxEmbutidoReais);
+                        }
+
+                        // 3. O valor do bolso é a diferença.
+                        partePropriaReais = valorTotalFixo - parteEmbutidaReais;
+
+                        break;
+                    // ================================================================
+
+                    default:
+                        console.warn(`Tipo de lance '${tipoLanceSelecionado}' não reconhecido para a Porto.`);
                 }
-            } else if (admin === "yamaha") {
-                // A lógica da Yamaha será adicionada no arquivo dela
-            } else if (admin === "itau") {
-                // A lógica do Itaú será adicionada no arquivo dele
+            }
+
+            if (tipoLanceSelecionado === "auto_embutido") {
+                lanceCalculadoObj.formaAbatimento = "reduzir_valor_parcela";
             }
 
             const valorTotalLance = partePropriaReais + parteEmbutidaReais;
@@ -151,8 +192,7 @@ function calcular(dadosCredito, dadosLanceInput) {
             lanceCalculadoObj.valorEmbutido = Math.max(0, parteEmbutidaReais);
             lanceCalculadoObj.valorDoBolso = Math.max(0, partePropriaReais);
 
-            const baseDeCalculoFinalDoPercentual =
-                admin === "itau" ? valorCreditoOriginal : saldoDevedorVigente;
+            const baseDeCalculoFinalDoPercentual = saldoDevedorVigente;
             if (baseDeCalculoFinalDoPercentual > 0) {
                 lanceCalculadoObj.percentualOfertado =
                     (lanceCalculadoObj.valorCalculado / baseDeCalculoFinalDoPercentual) *
@@ -166,7 +206,7 @@ function calcular(dadosCredito, dadosLanceInput) {
         let parcelaPosContemplacaoFinal = parcelaComRedutorCompleta;
         let prazoFinalResultado = prazoRestanteVigente;
 
-        if (tipoLanceSelecionado !== "nenhum") {
+        if (tipoLanceSelecionado && tipoLanceSelecionado !== "nenhum") {
             if (lanceCalculadoObj.formaAbatimento === "reduzir_valor_parcela") {
                 const seguroTotalEstimado = seguroVidaMensalFixo * prazoTotalConsorcio;
                 const saldoDevedorBruto = saldoDevedorOriginal + seguroTotalEstimado;
@@ -225,8 +265,11 @@ function calcular(dadosCredito, dadosLanceInput) {
             creditoLiquido: round(creditoLiquidoAposEmbutido),
             prazoComLance: prazoFinalResultado,
             parcelaPosContemplacao: round(parcelaPosContemplacaoFinal),
-            adesaoMensal: round(adesaoMensal),
-            mesesRestantesAdesao: mesesRestantesAdesao,
+            // A mágica acontece aqui:
+            ...(tipoBem === 'imovel' && {
+                adesaoMensal: round(adesaoMensal),
+                mesesRestantesAdesao: mesesRestantesAdesao
+            })
         };
     } catch (e) {
         console.error("Erro na simulação:", e);
@@ -234,7 +277,6 @@ function calcular(dadosCredito, dadosLanceInput) {
     }
 }
 
-// Exporta a função 'calcular' para ser usada pelo simuladorController.js
 module.exports = {
     calcular,
 };
