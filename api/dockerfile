@@ -24,3 +24,5 @@ EXPOSE 3000
 # Etapa 7: Define o comando padrão para iniciar a aplicação quando o container subir
 # Usamos o script "dev" que você configurou no package.json para usar o nodemon.
 CMD [ "npm", "run", "dev" ]
+
+# att
