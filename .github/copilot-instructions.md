@@ -26,7 +26,7 @@ O fluxo de uma requisição é o seguinte:
     ```bash
     npm run dev
     ```
-    O servidor estará disponível em `http://localhost:3000`.
+    O servidor estará disponível em `http://localhost:8080`.
 
 -   **Para rodar com Docker**:
     ```bash
