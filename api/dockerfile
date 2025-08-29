@@ -19,7 +19,7 @@ COPY . .
 
 # Etapa 6: Informa ao Docker que o container vai expor a porta 3000
 # Isso não publica a porta, apenas documenta. A publicação é feita no docker-compose.
-EXPOSE 3000
+EXPOSE 8080
 
 # Etapa 7: Define o comando padrão para iniciar a aplicação quando o container subir
 # Usamos o script "dev" que você configurou no package.json para usar o nodemon.
