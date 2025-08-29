@@ -27,5 +27,5 @@ app.get('/', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta http://localhost:${PORT}`);
-    console.log(`Documentação disponível em http://localhost:${PORT}/api-docs`); // Linha extra para facilitar :)
+    console.log(`Documentação disponível em http://localhost:${PORT}/api-docs`);
 });
