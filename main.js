@@ -8,7 +8,7 @@ const YAML = require('yamljs');
 const swaggerDocument = YAML.load('./openapi.yaml');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 app.use(express.json());
 
